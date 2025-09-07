@@ -1,0 +1,106 @@
+name: Stage_based_pipeline
+
+trigger:
+  branches:
+    include:
+      - main
+
+variables:
+  Myvar: 'SumitFedredatedIdentityNew'
+
+stages:
+  - stage: A
+    displayName: Terraform_Init_Validate_Fmt_Plan
+    pool: SumitAgentPool
+    jobs:
+      - job: TerraformInitValidateFmtPlan_krde
+        displayName: TerraformInitValidateFmtPlan
+        steps:
+        - task: TerraformTask@5
+          displayName: Terraform_Init
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            backendServiceArm: $(Myvar)
+            backendAzureRmStorageAccountName: 'sumitvatsstorage1'
+            backendAzureRmContainerName: 'tfstate'
+            backendAzureRmKey: 'terraform.tfstate'
+
+        - task: TerraformTask@5
+          displayName: Terraform_Validate
+          inputs:
+            provider: 'azurerm'
+            command: 'validate'
+
+        - task: TerraformTask@5
+          displayName: Terraform_Fmt
+          inputs:
+            provider: 'azurerm'
+            command: 'custom'
+            outputTo: 'console'
+            customCommand: 'fmt'
+            environmentServiceNameAzureRM: $(Myvar)
+
+        - task: TerraformTask@5
+          displayName: Terraform_Plan
+          inputs:
+            provider: 'azurerm'
+            command: 'plan'
+            environmentServiceNameAzureRM: $(Myvar)
+
+  # - stage: B
+  #   displayName: tfsecScanning
+  #   dependsOn: A
+  #   pool: SumitAgentPool
+  #   condition: succeeded()
+  #   jobs:
+  #     - job: tfsec_Scan_krde
+  #       displayName: tfsec_Scan
+  #       steps:
+  #       - task: tfsec@1
+  #         displayName: Scannning
+  #         inputs:
+  #           version: 'v1.26.0'
+  #           dir: '$(System.DefaultWorkingDirectory)'
+  #           continueOnError: true
+
+  - stage: C
+    displayName: Manual_Validation
+    dependsOn: A
+    pool: server
+    condition: succeeded()
+    jobs:
+      - job: Manual_Validation_krde
+        displayName: Manual_Validation
+        steps:
+        - task: ManualValidation@1
+          inputs:
+            notifyUsers: 'Sumit@kuilasourav1999gmail.onmicrosoft.com'
+            approvers: 'Sumit@kuilasourav1999gmail.onmicrosoft.com'
+
+  - stage: D
+    displayName: Terraform_Init_Apply
+    dependsOn: C
+    condition: succeeded()
+    pool: SumitAgentPool
+    jobs:
+      - job: TerraformInitApply_krde
+        displayName: TerraformInitApply
+        steps:
+        - task: TerraformTask@5
+          displayName: Terraform_Plan
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            backendServiceArm: $(Myvar)
+            backendAzureRmStorageAccountName: 'sumitvatsstorage1'
+            backendAzureRmContainerName: 'tfstate'
+            backendAzureRmKey: 'terraform.tfstate'
+
+        - task: TerraformTask@5
+          displayName: Terraform_Apply
+          inputs:
+            provider: 'azurerm'
+            command: 'apply'
+            commandOptions: '--auto-approve'
+            environmentServiceNameAzureRM: $(Myvar)
