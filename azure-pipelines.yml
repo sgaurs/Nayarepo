@@ -104,3 +104,9 @@ stages:
             command: 'apply'
             commandOptions: '--auto-approve'
             environmentServiceNameAzureRM: $(Myvar)
+
+        - task: TerraformTask@5
+          inputs:
+            provider: 'azurerm'
+            command: 'destroy'
+            environmentServiceNameAzureRM: $(Myvar)
