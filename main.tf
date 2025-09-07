@@ -33,10 +33,13 @@ resource "azurerm_storage_account" "testsa" {
 }
 
 resource "azurerm_storage_container" "testsc" {
-  name               = "tfstate"
-  storage_account_id = azurerm_storage_account.testsa.id
+  name                  = "tfstate"
+  storage_account_id    = azurerm_storage_account.testsa.id
+  container_access_type = "blob"
 }
 
-
-#
-#
+resource "azurerm_storage_container" "testsc1" {
+  name                  = "tfstate1"
+  storage_account_id    = azurerm_storage_account.testsa.id
+  container_access_type = "private"
+}
