@@ -8,6 +8,11 @@ trigger:
 variables:
   Myvar: 'SumitFedredatedIdentityNew'
 
+pr:
+  branches:
+    include:
+      - main
+
 stages:
   - stage: A
     displayName: Terraform_Init_Validate_Fmt_Plan
